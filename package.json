@@ -1,0 +1,24 @@
+{
+  "name": "saintshub-daily-verse-api",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "puppeteer": "^23.11.0",
+    "puppeteer-core": "^23.11.0",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2"
+  }
+}
