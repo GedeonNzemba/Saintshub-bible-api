@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node src/index.ts",
+    "start": "ts-node src/index.ts",
     "vercel-build": "echo 'Build step not required'"
   },
   "dependencies": {
@@ -14,12 +14,15 @@
     "@types/node": "^22.10.2",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "puppeteer": "^23.11.0",
-    "puppeteer-core": "^23.11.0",
-    "typescript": "^5.7.2"
+    "puppeteer": "^21.6.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "@types/puppeteer": "^7.0.4"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9",
-    "ts-node": "^10.9.2"
+    "nodemon": "^3.1.9"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
