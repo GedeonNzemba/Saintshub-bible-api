@@ -13,10 +13,8 @@ export default async function scrapeLogic (res: Response) {
       "--single-process",
       "--no-zygote",
     ],
-    executablePath:
-      process.env.NODE_ENV === "production"
-        ? process.env.PUPPETEER_EXECUTABLE_PATH
-        : puppeteer.executablePath(),
+    headless: true,
+    executablePath: '/usr/bin/google-chrome'
   });
   try {
     const page = await browser.newPage();
