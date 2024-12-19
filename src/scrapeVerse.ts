@@ -1,5 +1,4 @@
 import puppeteer from 'puppeteer';
-import { executablePath } from 'puppeteer-core';
 import dotenv from 'dotenv';
 import { Response } from 'express';
 
@@ -14,7 +13,10 @@ export default async function scrapeLogic (res: Response) {
       "--no-zygote",
     ],
     headless: true,
-    executablePath: '/usr/bin/google-chrome'
+    executablePath:
+      process.env.NODE_ENV === "production"
+        ? process.env.PUPPETEER_EXECUTABLE_PATH
+        : puppeteer.executablePath(),
   });
   try {
     const page = await browser.newPage();
