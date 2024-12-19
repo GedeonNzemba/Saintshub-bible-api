@@ -1,97 +1,45 @@
 import puppeteer from 'puppeteer';
+import dotenv from 'dotenv';
+import { Response } from 'express';
 
-interface VerseData {
-  verseDate?: string;
-  verseImage?: string;
-  verseText?: string;
-  referenceText?: string;
-}
+dotenv.config();
 
-export async function scrapeVerse(): Promise<VerseData> {
-  let browser;
+export default async function scrapeLogic (res: Response) {
+  const browser = await puppeteer.launch({
+    args: [
+      "--disable-setuid-sandbox",
+      "--no-sandbox",
+      "--single-process",
+      "--no-zygote"
+    ],
+    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+  });
   try {
-    console.log('Launching browser...');
-    browser = await puppeteer.launch({
-      headless: "new",
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process'
-      ]
-    });
-
-    console.log('Creating new page...');
     const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(30000);
-    await page.setDefaultTimeout(30000);
 
-    // Set a desktop viewport
-    await page.setViewport({
-      width: 1280,
-      height: 800,
-      deviceScaleFactor: 1,
-    });
+    await page.goto('https://www.bible.com/verse-of-the-day/');
 
-    console.log('Navigating to Bible.com...');
-    const response = await page.goto('https://www.bible.com/verse-of-the-day', {
-      waitUntil: 'networkidle0',
-      timeout: 30000
-    });
+    const verse = await page?.evaluate(() => {
+        const verseDate = document.querySelector('main .items-center > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > p')?.textContent;
+        const verseImage = document.querySelector('main .items-center > div:nth-child(1) img')?.getAttribute('src');
+        const verseText = document.querySelector('main .items-center > div:nth-child(1) div:nth-child(3) a:nth-child(1)')?.textContent;
+        const referenceText = document.querySelector('main.items-center > div:nth-child(1) > div:nth-child(3) a:nth-child(2)')?.textContent;
 
-    if (!response || !response.ok()) {
-      throw new Error(`Failed to load page: ${response?.status() || 'No response'}`);
-    }
+        return {
+            verseDate,
+            verseImage,
+            verseText,
+            referenceText,
+        };
+    })
 
-    // Wait for main content to load
-    await page.waitForSelector('main', { timeout: 10000 });
-    
-    console.log('Extracting verse data...');
-    const rawData = await page.evaluate(() => {
-      const verseDate = document.querySelector('main .items-center > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > p')?.textContent;
-      const verseImage = document.querySelector('main .items-center > div:nth-child(1) img')?.getAttribute('src');
-      const verseText = document.querySelector('main .items-center > div:nth-child(1) > div:nth-child(3) a:nth-child(1)')?.textContent;
-      const referenceText = document.querySelector('main.items-center > div:nth-child(1) div:nth-child(3) a:nth-child(2)')?.textContent;
-
-      console.log('Found data:', { verseDate, verseImage, verseText, referenceText });
-
-      return {
-        verseDate,
-        verseImage,
-        verseText,
-        referenceText
-      };
-    });
-
-    console.log('Scraped raw data:', rawData);
-
-    // Process the data and handle null/undefined values
-    const verseData: VerseData = {
-      verseDate: rawData.verseDate || new Date().toLocaleDateString(),
-      verseImage: rawData.verseImage || undefined,
-      verseText: rawData.verseText || 'Verse not found',
-      referenceText: rawData.referenceText || 'Reference not found'
-    };
-
-    if (!verseData.verseText || verseData.verseText === 'Verse not found') {
-      throw new Error('Failed to extract verse data');
-    }
-
-    return verseData;
-
-  } catch (error) {
-    console.error('Scraping error:', error);
-    throw error;
+    console.log(verse);
+    res.json(verse); // Send the verse data as JSON instead of just logging it
+  } catch (e) {
+    console.error(e);
+    res.send(`Something went wrong while running Puppeteer: ${e}`);
   } finally {
-    if (browser) {
-      console.log('Closing browser...');
-      try {
-        await browser.close();
-      } catch (error) {
-        console.error('Error closing browser:', error);
-      }
-    }
+    await browser.close();
   }
-}
+};
