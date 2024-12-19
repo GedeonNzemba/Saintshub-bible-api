@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import { executablePath } from 'puppeteer-core';
 import dotenv from 'dotenv';
 import { Response } from 'express';
 
@@ -10,10 +11,12 @@ export default async function scrapeLogic (res: Response) {
       "--disable-setuid-sandbox",
       "--no-sandbox",
       "--single-process",
-      "--no-zygote"
+      "--no-zygote",
     ],
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+    executablePath:
+      process.env.NODE_ENV === "production"
+        ? process.env.PUPPETEER_EXECUTABLE_PATH
+        : puppeteer.executablePath(),
   });
   try {
     const page = await browser.newPage();
