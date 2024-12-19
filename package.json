@@ -13,7 +13,7 @@
     "@types/node": "^22.10.2",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "puppeteer": "^23.11.0",
+    "puppeteer": "^19.7.2",
     "puppeteer-core": "^23.11.0",
     "typescript": "^5.7.2"
   },
