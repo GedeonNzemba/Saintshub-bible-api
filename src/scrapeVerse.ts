@@ -27,7 +27,7 @@ export default async function scrapeLogic (res: Response) {
         const verseDate = document.querySelector('main .items-center > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > p')?.textContent;
         const verseImage = document.querySelector('main .items-center > div:nth-child(1) img')?.getAttribute('src');
         const verseText = document.querySelector('main .items-center > div:nth-child(1) div:nth-child(3) a:nth-child(1)')?.textContent;
-        const referenceText = document.querySelector('main.items-center > div:nth-child(1) > div:nth-child(3) a:nth-child(2)')?.textContent;
+        const referenceText = document.querySelector('main.items-center > div:nth-child(1) div:nth-child(3) a:nth-child(2)')?.textContent;
 
         return {
             verseDate,
