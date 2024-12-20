@@ -4,7 +4,7 @@ import { Response } from 'express';
 
 dotenv.config();
 
-export default async function scrapeLogic (res: Response) {
+export default async function scrapeLogic(res: Response) {
   const browser = await puppeteer.launch({
     args: [
       "--disable-setuid-sandbox",
@@ -24,17 +24,17 @@ export default async function scrapeLogic (res: Response) {
     await page.goto('https://www.bible.com/verse-of-the-day/');
 
     const verse = await page?.evaluate(() => {
-        const verseDate = document.querySelector('main .items-center > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > p')?.textContent;
-        const verseImage = document.querySelector('main .items-center > div:nth-child(1) img')?.getAttribute('src');
-        const verseText = document.querySelector('main .items-center > div:nth-child(1) div:nth-child(3) a:nth-child(1)')?.textContent;
-        const referenceText = document.querySelector('main.items-center > div:nth-child(1) div:nth-child(3) a:nth-child(2)')?.textContent;
+      const verseDate = document.querySelector('main .items-center > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > p')?.textContent;
+      const verseImage = document.querySelector('main .items-center > div:nth-child(1) img')?.getAttribute('src');
+      const verseText = document.querySelector('main .items-center > div:nth-child(1) div:nth-child(3) a:nth-child(1)')?.textContent;
+      const referenceText = document.querySelector('main.items-center > div:nth-child(1) div:nth-child(3) a:nth-child(2)')?.textContent;
 
-        return {
-            verseDate,
-            verseImage,
-            verseText,
-            referenceText,
-        };
+      return {
+        verseDate,
+        verseImage,
+        verseText,
+        referenceText,
+      };
     })
 
     console.log(verse);
