@@ -56,13 +56,15 @@ async function setupPage(browser: any) {
   return page;
 }
 
-export async function scrapeVerse() {
+export async function scrapeQuotes(language: 'en' | 'fr' = 'en') {
   let browser = null;
   let retries = 3;
   
+  const url = `https://branham.org/${language}/QuoteOfTheDay`;
+  
   while (retries > 0) {
     try {
-      console.log(`Attempt ${4 - retries}: Launching browser...`);
+      console.log(`Attempt ${4 - retries}: Launching browser for ${language} Quote Of The Day...`);
       const isProduction = process.env.NODE_ENV === "production";
       
       const launchOptions: PuppeteerLaunchOptions = {
@@ -84,8 +86,8 @@ export async function scrapeVerse() {
       browser = await puppeteer.launch(launchOptions);
       const page = await setupPage(browser);
       
-      console.log('Navigating to bible.com...');
-      const response = await page.goto('https://www.bible.com/verse-of-the-day', {
+      console.log(`Navigating to ${url}...`);
+      const response = await page.goto(url, {
         waitUntil: 'domcontentloaded',
         timeout: 30000
       });
@@ -95,35 +97,64 @@ export async function scrapeVerse() {
       }
 
       console.log('Waiting for content...');
-      await page.waitForSelector('main .items-center', { timeout: 30000 });
+      await page.waitForSelector('.QOTD', { timeout: 30000 });
 
-      console.log('Extracting verse data...');
-      const verse = await page.evaluate(() => {
-        const verseDate = document.querySelector('main .items-center > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > p')?.textContent;
-        const verseImage = document.querySelector('main .items-center > div:nth-child(1) img')?.getAttribute('src');
-        const verseText = document.querySelector('main .items-center > div:nth-child(1) div:nth-child(3) a:nth-child(1)')?.textContent;
-        const referenceText = document.querySelector('main.items-center > div:nth-child(1) div:nth-child(3) a:nth-child(2)')?.textContent;
+      console.log('Extracting Quote Of The Day data...');
+      const quoteData = await page.evaluate(() => {
+        try {
+          const audio = document.querySelector(".QOTD #audioplayer audio source[type='audio/mpeg']")?.getAttribute("src") || null;
+          const sermonDate = document.querySelector(".QOTDdate")?.textContent?.trim() || null;
+          const sermonTitle = document.querySelector(".QOTDtitle span#summary")?.textContent?.trim() || null;
+          // Updated selector for quote text
+          const quote = document.querySelector(".QOTDtext span#content")?.textContent?.trim() || null;
 
-        if (!verseText || !referenceText) {
-          throw new Error('Failed to extract verse data');
+          const scriptureReference = document.querySelector(".dailybread_title span#scripturereference")?.textContent?.trim() || null;
+          const scriptureText = document.querySelector(".dailybread_text span#scripturetext")?.textContent?.trim() || null;
+
+          return {
+            quoteOfTheDay: {
+              audio,
+              sermonDate,
+              sermonTitle,
+              quote
+            },
+            dailyBread: {
+              scriptureReference,
+              scriptureText
+            }
+          };
+        } catch (error) {
+          console.error('Error during page evaluation:', error);
+          return null;
         }
-
-        return {
-          verseDate,
-          verseImage,
-          verseText,
-          referenceText,
-        };
       });
 
       console.log('Storing in Redis...');
-      if (verse) {
-        await redisClient.set('dailyVerse', JSON.stringify(verse), {
-          EX: 24 * 60 * 60 // 24 hours in seconds
-        });
+      if (quoteData) {
+        // Add language to the data after page.evaluate()
+        const dataWithLanguage = {
+          ...quoteData,
+          language
+        };
+
+        // Validate the data structure before storing
+        if (
+          dataWithLanguage.quoteOfTheDay &&
+          dataWithLanguage.dailyBread &&
+          Object.keys(dataWithLanguage.quoteOfTheDay).length > 0 &&
+          Object.keys(dataWithLanguage.dailyBread).length > 0
+        ) {
+          await redisClient.set(`${language}DailyQuote`, JSON.stringify(dataWithLanguage), {
+            EX: 24 * 60 * 60 // 24 hours in seconds
+          });
+          return dataWithLanguage;
+        } else {
+          console.error('Invalid data structure:', dataWithLanguage);
+          throw new Error('Failed to extract valid quote data');
+        }
       }
 
-      return verse;
+      throw new Error('Failed to extract quote data');
     } catch (error) {
       console.error(`Attempt ${4 - retries} failed:`, error);
       retries--;
@@ -144,29 +175,32 @@ export async function scrapeVerse() {
 }
 
 // HTTP endpoint handler
-export default async function scrapeLogic(res: Response) {
+export default async function scrapeQuotesLogic(req: { query: { lang?: string } }, res: Response) {
+  const language = req.query.lang === 'fr' ? 'fr' : 'en';
+  
   try {
-    // Try to get verse from Redis first
-    const cachedVerse = await redisClient.get('dailyVerse');
-    if (cachedVerse) {
-      return res.json(JSON.parse(cachedVerse));
+    // Try to get quotes from Redis first
+    const cachedQuotes = await redisClient.get(`${language}DailyQuote`);
+    if (cachedQuotes) {
+      return res.json(JSON.parse(cachedQuotes));
     }
 
-    // If not in cache, scrape new verse
-    const verse = await scrapeVerse();
-    res.json(verse);
+    // If not in cache, scrape new quotes
+    const quotes = await scrapeQuotes(language);
+    res.json(quotes);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch verse' });
+    res.status(500).json({ error: 'Failed to fetch quotes' });
   }
 }
 
-// Schedule daily scraping at midnight
+// Schedule daily scraping at midnight for both languages
 cron.schedule('0 0 * * *', async () => {
   try {
-    console.log('Running daily verse scraping...');
-    await scrapeVerse();
-    console.log('Daily verse updated successfully');
+    console.log('Running daily quotes scraping...');
+    await scrapeQuotes('en');
+    await scrapeQuotes('fr');
+    console.log('Daily quotes updated successfully');
   } catch (error) {
-    console.error('Failed to update daily verse:', error);
+    console.error('Failed to update daily quotes:', error);
   }
 });

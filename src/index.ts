@@ -3,6 +3,7 @@ import express from 'express';
 import config from './config';
 import scrapeLogic from './scrapeVerse';
 import musicRoutes from './routes/music';
+import quotesRoutes from './routes/quotes';
 import { createClient } from 'redis';
 
 const app = express();
@@ -61,8 +62,9 @@ app.get('/api/daily-verse', async (req: any, res: any) => {
   }
 });
 
-// Music routes
+// Mount routes
 app.use('/music', musicRoutes);
+app.use('/quotes', quotesRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
