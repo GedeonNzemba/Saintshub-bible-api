@@ -14,11 +14,14 @@
     "@types/node": "^22.10.2",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "node-cron": "^3.0.3",
     "puppeteer": "^19.7.2",
     "puppeteer-core": "^23.11.0",
+    "redis": "^4.7.0",
     "typescript": "^5.7.2"
   },
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2"
   }
